@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OTP Bot</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #e8f5e9;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    padding: 20px 16px 16px;
+    text-align: center;
+    box-shadow: 0 3px 12px rgba(39,174,96,0.4);
+  }
+  .header-avatar {
+    width: 60px; height: 60px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    border: 2px solid rgba(255,255,255,0.5);
+  }
+  .header h1 {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .header p {
+    color: rgba(255,255,255,0.85);
+    font-size: 12px;
+    margin-top: 4px;
+  }
+  .status-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: #a8ff78;
+    border-radius: 50%;
+    margin-right: 5px;
+    box-shadow: 0 0 6px #a8ff78;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity:1; } 50% { opacity:0.4; }
+  }
+
+  /* ── Stats Row ── */
+  .stats-row {
+    display: flex;
+    gap: 10px;
+    padding: 14px 14px 0;
+  }
+  .stat-card {
+    flex: 1;
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px 10px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .stat-card .stat-icon { font-size: 20px; }
+  .stat-card .stat-val {
+    font-size: 20px; font-weight: 800;
+    color: #2ecc71; display: block; margin: 2px 0;
+  }
+  .stat-card .stat-lbl {
+    font-size: 10px; color: #999; font-weight: 500;
+  }
+
+  /* ── Grid ── */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    border: none; cursor: pointer; border-radius: 16px;
+    padding: 0; position: relative; overflow: hidden;
+    transition: transform 0.13s, box-shadow 0.13s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { transform: scale(0.95); }
+
+  .btn-inner {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 6px; padding: 20px 10px;
+  }
+
+  .btn-icon {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+
+  .btn-label {
+    font-size: 13px; font-weight: 700;
+    color: #fff; letter-spacing: 0.2px;
+    text-align: center; line-height: 1.2;
+  }
+  .btn-sub {
+    font-size: 10px;
+    color: rgba(255,255,255,0.8);
+    text-align: center;
+  }
+
+  /* Green buttons */
+  .btn-green {
+    background: linear-gradient(145deg, #2ecc71, #27ae60);
+    box-shadow: 0 5px 16px rgba(46,204,113,0.45);
+  }
+  /* Blue buttons */
+  .btn-blue {
+    background: linear-gradient(145deg, #3498db, #2980b9);
+    box-shadow: 0 5px 16px rgba(52,152,219,0.45);
+  }
+  /* Purple button */
+  .btn-purple {
+    background: linear-gradient(145deg, #9b59b6, #8e44ad);
+    box-shadow: 0 5px 16px rgba(155,89,182,0.4);
+  }
+  /* Orange button */
+  .btn-orange {
+    background: linear-gradient(145deg, #f39c12, #e67e22);
+    box-shadow: 0 5px 16px rgba(243,156,18,0.45);
+  }
+
+  /* ── Wide button (full row) ── */
+  .btn-wide {
+    grid-column: 1 / -1;
+  }
+  .btn-wide .btn-inner {
+    flex-direction: row;
+    padding: 16px 24px;
+    gap: 14px;
+  }
+  .btn-wide .btn-icon { width: 40px; height: 40px; font-size: 20px; }
+  .btn-wide .btn-label { font-size: 15px; }
+
+  /* ── Section label ── */
+  .section-title {
+    padding: 6px 14px 0;
+    font-size: 11px;
+    font-weight: 700;
+    color: #888;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* ── Bottom OTP ticker ── */
+  .ticker {
+    margin: 4px 14px 14px;
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  }
+  .ticker-icon { font-size: 20px; }
+  .ticker-text { flex: 1; }
+  .ticker-text .t-title { font-size: 11px; color: #999; font-weight: 600; }
+  .ticker-text .t-val {
+    font-size: 13px; font-weight: 800; color: #2ecc71;
+    letter-spacing: 2px;
+  }
+  .ticker-badge {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: #fff; font-size: 10px; font-weight: 700;
+    padding: 4px 10px; border-radius: 20px;
+  }
+
+  /* ripple */
+  .ripple {
+    position: absolute; border-radius: 50%;
+    background: rgba(255,255,255,0.35);
+    transform: scale(0);
+    animation: ripple-anim 0.5s linear;
+    pointer-events: none;
+  }
+  @keyframes ripple-anim {
+    to { transform: scale(4); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-avatar">🤖</div>
+  <h1>OTP Forwarder Bot</h1>
+  <p><span class="status-dot"></span>FastX + StexSMS • Active</p>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-icon">🔑</div>
+    <span class="stat-val" id="otp-count">0</span>
+    <span class="stat-lbl">OTPs Received</span>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">📡</div>
+    <span class="stat-val" style="color:#3498db">2</span>
+    <span class="stat-lbl">APIs Active</span>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">📱</div>
+    <span class="stat-val" style="color:#9b59b6">3</span>
+    <span class="stat-lbl">Services</span>
+  </div>
+</div>
+
+<!-- Main Actions -->
+<div class="section-title" style="padding-top:14px">QUICK ACTIONS</div>
+<div class="grid">
+
+  <button class="btn btn-green" onclick="sendCmd('get_number', this)">
+    <div class="btn-inner">
+      <div class="btn-icon">📞</div>
+      <div>
+        <div class="btn-label">Get Number</div>
+        <div class="btn-sub">Instant SIM</div>
+      </div>
+    </div>
+  </button>
+
+  <button class="btn btn-orange" onclick="sendCmd('balance', this)">
+    <div class="btn-inner">
+      <div class="btn-icon">💰</div>
+      <div>
+        <div class="btn-label">My Balance</div>
+        <div class="btn-sub">Check wallet</div>
+      </div>
+    </div>
+  </button>
+
+  <button class="btn btn-blue" onclick="sendCmd('status', this)">
+    <div class="btn-inner">
+      <div class="btn-icon">📊</div>
+      <div>
+        <div class="btn-label">Status</div>
+        <div class="btn-sub">Bot health</div>
+      </div>
+    </div>
+  </button>
+
+  <button class="btn btn-blue" onclick="sendCmd('history', this)">
+    <div class="btn-inner">
+      <div class="btn-icon">🔍</div>
+      <div>
+        <div class="btn-label">History</div>
+        <div class="btn-sub">Past OTPs</div>
+      </div>
+    </div>
+  </button>
+
+  <button class="btn btn-green btn-wide" onclick="sendCmd('live_traffic', this)">
+    <div class="btn-inner">
+      <div class="btn-icon">⚡</div>
+      <div>
+        <div class="btn-label">Live Traffic</div>
+        <div class="btn-sub">Real-time OTP stream</div>
+      </div>
+    </div>
+  </button>
+
+  <button class="btn btn-purple" onclick="sendCmd('withdraw', this)">
+    <div class="btn-inner">
+      <div class="btn-icon">💸</div>
+      <div>
+        <div class="btn-label">Withdraw</div>
+        <div class="btn-sub">Cash out</div>
+      </div>
+    </div>
+  </button>
+
+  <button class="btn btn-blue" onclick="sendCmd('help', this)">
+    <div class="btn-inner">
+      <div class="btn-icon">ℹ️</div>
+      <div>
+        <div class="btn-label">Help</div>
+        <div class="btn-sub">Guide & tips</div>
+      </div>
+    </div>
+  </button>
+
+</div>
+
+<!-- Latest OTP ticker -->
+<div class="ticker">
+  <div class="ticker-icon">🔔</div>
+  <div class="ticker-text">
+    <div class="t-title">LATEST OTP</div>
+    <div class="t-val" id="latest-otp">— — — — — —</div>
+  </div>
+  <div class="ticker-badge">LIVE</div>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+function sendCmd(cmd, btn) {
+  // Ripple effect
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple';
+  const rect = btn.getBoundingClientRect();
+  ripple.style.width = ripple.style.height = Math.max(rect.width, rect.height) + 'px';
+  ripple.style.left = '0px'; ripple.style.top = '0px';
+  btn.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 600);
+
+  if (tg) {
+    tg.sendData(cmd);
+  } else {
+    // Preview mode
+    alert('Command: ' + cmd);
+  }
+}
+
+// Simulate live OTP counter (replace with real data via Telegram.WebApp.initDataUnsafe)
+let count = 0;
+setInterval(() => {
+  // In real use, fetch from your bot backend
+}, 5000);
+</script>
+</body>
+</html>
